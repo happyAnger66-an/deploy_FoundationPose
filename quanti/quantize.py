@@ -77,7 +77,7 @@ def quantize_model(model, calib_data_file, save_dir):
 
 #    with torch.no_grad():
     mtq.quantize(model, quant_cfg,
-                 forward_loop=calibrate_loop)
+                    forward_loop=calibrate_loop)
     print(f'quantize summary')
     mtq.print_quant_summary(model)
 
