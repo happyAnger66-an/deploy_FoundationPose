@@ -50,6 +50,19 @@ class FoundationPoseCalibrationData(Dataset):
     def __getitem__(self, idx):
         return self.calib_inputs[idx]
 
+def export_onnx(model, save_dir):
+    dummy_A = torch.randn((1, 6, 160, 160), dtype=torch.float32).cuda()
+    dummy_B = torch.randn((1, 6, 160, 160), dtype=torch.float32).cuda()
+    torch.onnx.export(
+        model,
+        (dummy_A, dummy_B),
+        f'{save_dir}/model_origin.onnx',
+        input_names=['A', 'B'],
+        output_names=['pred_xyz'],
+        dynamic_axes={'A': {0: 'batch_size'},
+                    'B': {0: 'batch_size'},
+                    'pred_xyz': {0: 'batch_size'}},
+    )
 
 def quantize_model(model, calib_data_file, save_dir):
     quant_cfg = mtq.FP8_DEFAULT_CFG
@@ -68,8 +81,6 @@ def quantize_model(model, calib_data_file, save_dir):
                 continue
 
             print(f'calibration idx {idx}')
-            if idx > 100:
-                break
             A, B = data
             A = torch.from_numpy(A).cuda()
             B = torch.from_numpy(B).cuda()
@@ -77,7 +88,7 @@ def quantize_model(model, calib_data_file, save_dir):
 
 #    with torch.no_grad():
     mtq.quantize(model, quant_cfg,
-                    forward_loop=calibrate_loop)
+                 forward_loop=calibrate_loop)
     print(f'quantize summary')
     mtq.print_quant_summary(model)
 
@@ -133,4 +144,9 @@ if __name__ == "__main__":
     print(f'begin quantize model...')
     quantize_model(model)
     print(f'end quantize model...')
+    
+    print(f'------------- quantize summary: -----------------')
+    print(f'-------------------------------------------------')
     mtq.print_quant_summary(model)
+    print(f'-------------------------------------------------')
+    print(f'------------- quantize summary: -----------------')

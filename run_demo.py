@@ -13,7 +13,7 @@ import argparse
 
 from calib import FoundationPoseCalibCollector, \
   FoundationPoseOutputHook 
-from quanti.quantize import quantize_model
+from quanti.quantize import quantize_model, export_onnx
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -26,6 +26,7 @@ if __name__ == '__main__':
     parser.add_argument('--track_refine_iter', type=int, default=2)
     parser.add_argument('--debug', type=int, default=1)
     parser.add_argument('--collect_calib', type=bool, default=False)
+    parser.add_argument('--collect_output', type=str)
     parser.add_argument('--calib_data', type=str)
     parser.add_argument('--debug_dir', type=str, default=f'{code_dir}/debug')
     args = parser.parse_args()
@@ -50,18 +51,21 @@ if __name__ == '__main__':
                          scorer=scorer, refiner=refiner, debug_dir=debug_dir, debug=debug, glctx=glctx)
     logging.info("estimator initialization done")
 
-    output_collector = FoundationPoseOutputHook()
-    output_collector.start_collect(type(refiner.model), refiner.model)
         
     if args.collect_calib:
         calib_collector = FoundationPoseCalibCollector('calib_inputs.pt')
         calib_collector.start_collect(type(refiner.model), refiner.model)
-        
+    
     if args.calib_data is not None:
+        refiner.model.eval()
+#        torch.backends.mha.set_fastpath_enabled(False)
         quantize_model(refiner.model, args.calib_data, 'quantized_models')
-        print(f'quantize done')
-        sys.exit(0)
+        print(f'quantize done.')
 
+    if args.collect_output:
+        output_collector = FoundationPoseOutputHook(args.collect_output)
+        output_collector.start_collect(type(refiner.model), refiner.model)
+    
     reader = YcbineoatReader(
         video_dir=args.test_scene_dir, shorter_side=None, zfar=np.inf)
 
@@ -107,4 +111,6 @@ if __name__ == '__main__':
 
     if args.collect_calib:
         calib_collector.stop_collect()
-    output_collector.stop_collect()
+        
+    if args.collect_output:
+        output_collector.stop_collect()

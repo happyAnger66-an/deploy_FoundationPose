@@ -1,16 +1,13 @@
-#! /bin/bash
 #!/bin/bash
 
-/usr/src/tensorrt/bin/trtexec --onnx=/workspace/models/scorer_hwc.onnx \
-                              --minShapes=render_input:1x160x160x6,transf_input:1x160x160x6 \
-                              --optShapes=render_input:252x160x160x6,transf_input:252x160x160x6 \
-                              --maxShapes=render_input:252x160x160x6,transf_input:252x160x160x6 \
-                              --fp16 \
-                              --saveEngine=/workspace/models/scorer_hwc_dynamic_fp16.engine
-
-/usr/src/tensorrt/bin/trtexec --onnx=/workspace/models/refiner_hwc.onnx \
-                              --minShapes=render_input:1x160x160x6,transf_input:1x160x160x6 \
-                              --optShapes=render_input:252x160x160x6,transf_input:252x160x160x6 \
-                              --maxShapes=render_input:252x160x160x6,transf_input:252x160x160x6 \
-                              --fp16 \
-                              --saveEngine=/workspace/models/refiner_hwc_dynamic_fp16.engine
+trtexec --onnx=$1 \
+        --minShapes=A:1x6x160x160,B:1x6x160x160 \
+        --optShapes=A:1x6x160x160,B:1x6x160x160 \
+        --maxShapes=A:1x6x160x160,B:1x6x160x160 \
+        --fp16 \
+        --saveEngine=refine.engine \
+	--dumpProfile
+#        --optShapes=A:252x6x160x160,B:252x6x160x160 \
+#        --maxShapes=A:252x6x160x160,B:252x6x160x160 \
+#        --optShapes=A:252x6x160x160,B:252x6x160x160 \
+#        --maxShapes=A:252x6x160x160,B:252x6x160x160 \
